@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pena — Studio Penulisan Novel</title>
+<style>
+  :root{
+    --ink:#241f1a;
+    --paper:#f3ece0;
+    --paper-2:#e9dfcd;
+    --rule:#cdbfa3;
+    --accent:#9a3324;
+    --accent-soft:#c9d6c0;
+    --gold:#a9852f;
+    --card:#fffdf8;
+    --muted:#7a6f5d;
+    --display: "Iowan Old Style","Georgia","Times New Roman",serif;
+    --body: "Charter","Georgia",serif;
+    --ui: "Avenir Next","Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);}
+  ::selection{background:var(--gold);color:#fff;}
+
+  /* Layout shell */
+  .shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh;}
+  @media (max-width:860px){.shell{grid-template-columns:1fr;}}
+
+  /* Sidebar */
+  .sidebar{background:var(--paper-2);border-right:1px solid var(--rule);padding:28px 20px;display:flex;flex-direction:column;gap:24px;}
+  .brand{font-family:var(--display);font-size:28px;letter-spacing:.5px;display:flex;align-items:baseline;gap:8px;}
+  .brand small{font-family:var(--ui);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+  .story-picker select{width:100%;padding:10px;border:1px solid var(--rule);background:var(--card);font-family:var(--ui);color:var(--ink);border-radius:4px;}
+  .new-story-btn{width:100%;margin-top:8px;padding:9px;background:transparent;border:1px dashed var(--accent);color:var(--accent);font-family:var(--ui);font-size:13px;border-radius:4px;cursor:pointer;}
+  .new-story-btn:hover{background:var(--accent);color:#fff;}
+  nav.tabs{display:flex;flex-direction:column;gap:2px;margin-top:8px;}
+  nav.tabs button{
+    text-align:left;border:none;background:transparent;padding:11px 12px;font-family:var(--ui);
+    font-size:14px;color:var(--ink);cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:10px;
+  }
+  nav.tabs button .num{font-family:var(--display);font-style:italic;color:var(--gold);width:18px;}
+  nav.tabs button:hover{background:rgba(154,51,36,.08);}
+  nav.tabs button.active{background:var(--accent);color:#fff;}
+  nav.tabs button.active .num{color:#f1d9b0;}
+  .sidebar-foot{margin-top:auto;font-family:var(--ui);font-size:11px;color:var(--muted);line-height:1.6;}
+
+  /* Main */
+  main{padding:36px 48px;max-width:980px;}
+  @media (max-width:860px){main{padding:24px;}}
+  .page-head{margin-bottom:28px;}
+  .page-head h1{font-family:var(--display);font-size:34px;margin:0 0 4px;}
+  .page-head p{color:var(--muted);font-family:var(--ui);font-size:14px;margin:0;}
+  .empty-story{padding:60px 20px;text-align:center;color:var(--muted);font-family:var(--ui);}
+
+  /* Buttons & inputs */
+  .btn{font-family:var(--ui);font-size:13px;padding:9px 16px;border-radius:4px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;}
+  .btn:hover{background:#7e2a1d;}
+  .btn.ghost{background:transparent;color:var(--accent);}
+  .btn.ghost:hover{background:rgba(154,51,36,.08);}
+  .btn.small{padding:5px 10px;font-size:12px;}
+  input[type=text], textarea, select{
+    width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;border:1px solid var(--rule);
+    border-radius:4px;background:var(--card);color:var(--ink);
+  }
+  input[type=text]:focus, textarea:focus, select:focus{outline:2px solid var(--gold);outline-offset:1px;}
+  label{font-family:var(--ui);font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);display:block;margin-bottom:6px;}
+  .field{margin-bottom:16px;}
+  textarea{min-height:120px;resize:vertical;line-height:1.7;}
+  .row{display:flex;gap:14px;}
+  .row > *{flex:1;}
+
+  /* Cards / lists */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;margin-top:8px;}
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:16px;position:relative;cursor:pointer;transition:box-shadow .15s, transform .15s;}
+  .card:hover{box-shadow:0 6px 18px rgba(36,31,26,.12);transform:translateY(-2px);}
+  .card h3{font-family:var(--display);font-size:19px;margin:0 0 6px;}
+  .card p{font-family:var(--ui);font-size:12.5px;color:var(--muted);margin:0;line-height:1.5;}
+  .card .tag{display:inline-block;font-family:var(--ui);font-size:10px;text-transform:uppercase;letter-spacing:1px;background:var(--accent-soft);color:#33402b;padding:3px 8px;border-radius:20px;margin-bottom:8px;}
+  .card .del{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;}
+  .card .del:hover{color:var(--accent);}
+
+  .char-card{display:flex;gap:12px;align-items:center;}
+  .char-thumb{width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);flex-shrink:0;background:var(--paper-2);}
+  .char-thumb.placeholder{display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:20px;color:var(--gold);}
+
+  /* Editor pane */
+  .editor-card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:24px;margin-bottom:22px;}
+  .editor-card h2{font-family:var(--display);font-size:22px;margin:0 0 16px;}
+  .toolbar{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;}
+  .breadcrumb{font-family:var(--ui);font-size:12px;color:var(--muted);margin-bottom:10px;}
+  .breadcrumb button{background:none;border:none;color:var(--accent);cursor:pointer;font-family:var(--ui);font-size:12px;padding:0;}
+
+  /* Prose render with character tooltip */
+  .prose-render{font-family:var(--body);font-size:16px;line-height:1.85;white-space:pre-wrap;border-top:1px dashed var(--rule);margin-top:16px;padding-top:16px;}
+  .char-mention{color:var(--accent);font-weight:bold;border-bottom:1px dotted var(--accent);cursor:help;position:relative;}
+  .char-tooltip{
+    position:fixed;z-index:999;background:var(--ink);color:#f3ece0;padding:10px;border-radius:8px;
+    display:flex;gap:10px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.35);pointer-events:none;
+    max-width:260px;font-family:var(--ui);opacity:0;transition:opacity .12s;
+  }
+  .char-tooltip.show{opacity:1;}
+  .char-tooltip img{width:56px;height:56px;border-radius:6px;object-fit:cover;flex-shrink:0;}
+  .char-tooltip .ph{width:56px;height:56px;border-radius:6px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px;flex-shrink:0;}
+  .char-tooltip .ct-name{font-family:var(--display);font-size:15px;margin:0 0 2px;}
+  .char-tooltip .ct-desc{font-size:11px;color:#cfc6b4;line-height:1.4;margin:0;}
+
+  .hint{font-family:var(--ui);font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5;}
+  .image-input-row{display:flex;gap:10px;align-items:center;}
+  .image-preview{width:60px;height:60px;border-radius:6px;object-fit:cover;border:1px solid var(--rule);}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(36,31,26,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .modal-bg.open{display:flex;}
+  .modal{background:var(--card);border-radius:8px;padding:24px;width:100%;max-width:420px;}
+  .modal h3{font-family:var(--display);margin-top:0;}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">Pena <small>studio novel</small></div>
+
+    <div class="story-picker">
+      <label for="storySelect">Cerita aktif</label>
+      <select id="storySelect"></select>
+      <button class="new-story-btn" id="newStoryBtn">+ Cerita baru</button>
+    </div>
+
+    <nav class="tabs" id="tabs">
+      <button data-tab="overview"><span class="num">i.</span> Ringkasan Cerita</button>
+      <button data-tab="characters"><span class="num">i.</span> Karakter</button>
+      <button data-tab="plots"><span class="num">ii.</span> Plot</button>
+      <button data-tab="scenes"><span class="num">iii.</span> Adegan</button>
+      <button data-tab="dialogues"><span class="num">iv.</span> Dialog</button>
+    </nav>
+
+    <div class="sidebar-foot">
+      Data tersimpan otomatis di peramban kamu (localStorage). Untuk berbagi atau mencadangkan, gunakan tombol ekspor/impor di bagian Ringkasan Cerita.
+    </div>
+  </aside>
+
+  <main id="main">
+    <!-- content injected by JS -->
+  </main>
+</div>
+
+<div class="char-tooltip" id="charTooltip"></div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>Cerita baru</h3>
+    <div class="field">
+      <label>Judul cerita</label>
+      <input type="text" id="modalTitle" placeholder="Misal: Bayang di Antara Hujan">
+    </div>
+    <div class="field">
+      <label>Sinopsis singkat (opsional)</label>
+      <textarea id="modalDesc" style="min-height:70px"></textarea>
+    </div>
+    <div class="toolbar">
+      <button class="btn ghost" id="modalCancel">Batal</button>
+      <button class="btn" id="modalCreate">Buat cerita</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- Data layer ---------- */
+const DB_KEY = "pena_novel_data_v1";
+function loadDB(){
+  try{ return JSON.parse(localStorage.getItem(DB_KEY)) || {stories:[], activeId:null}; }
+  catch(e){ return {stories:[], activeId:null}; }
+}
+function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+let db = loadDB();
+let currentTab = "overview";
+
+function getActiveStory(){
+  return db.stories.find(s=>s.id===db.activeId) || null;
+}
+function newStory(title, desc){
+  const s = {
+    id: uid(), title: title||"Cerita Tanpa Judul", desc: desc||"",
+    characters: [], plots: [], scenes: [], dialogues: []
+  };
+  db.stories.push(s);
+  db.activeId = s.id;
+  saveDB();
+  return s;
+}
+if(db.stories.length===0){
+  newStory("Cerita Pertamaku","Mulai tuliskan sinopsis di sini.");
+}
+if(!db.activeId) db.activeId = db.stories[0].id;
+
+/* ---------- Character mention detection ---------- */
+function escapeHtml(str){
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function renderProseWithMentions(text, characters){
+  if(!text) return "<em style='color:var(--muted)'>Belum ada isi.</em>";
+  let html = escapeHtml(text);
+  // sort by name length desc to avoid partial overlap issues
+  const sorted = [...characters].filter(c=>c.name && c.name.trim()).sort((a,b)=>b.name.length-a.name.length);
+  sorted.forEach(c=>{
+    const name = c.name.trim();
+    if(!name) return;
+    const re = new RegExp("\\b("+name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")\\b","gi");
+    html = html.replace(re, (m)=>`<span class="char-mention" data-char="${c.id}">${m}</span>`);
+  });
+  return html;
+}
+function attachMentionEvents(container, story){
+  const tooltip = document.getElementById("charTooltip");
+  container.querySelectorAll(".char-mention").forEach(el=>{
+    el.addEventListener("mouseenter", (e)=>{
+      const c = story.characters.find(ch=>ch.id===el.dataset.char);
+      if(!c) return;
+      tooltip.innerHTML = `
+        ${c.image ? `<img src="${c.image}" alt="${escapeHtml(c.name)}">` : `<div class="ph">${escapeHtml(c.name[0]||"?")}</div>`}
+        <div>
+          <p class="ct-name">${escapeHtml(c.name)}</p>
+          <p class="ct-desc">${escapeHtml((c.role? c.role+" — ":"") + (c.desc||"Tidak ada deskripsi."))}</p>
+        </div>`;
+      tooltip.classList.add("show");
+    });
+    el.addEventListener("mousemove", (e)=>{
+      tooltip.style.left = Math.min(e.clientX+16, window.innerWidth-280)+"px";
+      tooltip.style.top = Math.min(e.clientY+16, window.innerHeight-100)+"px";
+    });
+    el.addEventListener("mouseleave", ()=>{
+      tooltip.classList.remove("show");
+    });
+  });
+}
+
+/* ---------- Rendering ---------- */
+const main = document.getElementById("main");
+
+function render(){
+  const story = getActiveStory();
+  refreshStorySelect();
+  document.querySelectorAll("nav.tabs button").forEach(b=>{
+    b.classList.toggle("active", b.dataset.tab===currentTab);
+  });
+
+  if(!story){
+    main.innerHTML = `<div class="empty-story">Belum ada cerita. Buat satu lewat tombol "+ Cerita baru".</div>`;
+    return;
+  }
+
+  if(currentTab==="overview") renderOverview(story);
+  else if(currentTab==="characters") renderCharacters(story);
+  else if(currentTab==="plots") renderList(story,"plots","Plot","plot");
+  else if(currentTab==="scenes") renderList(story,"scenes","Adegan","adegan");
+  else if(currentTab==="dialogues") renderDialogues(story);
+}
+
+function refreshStorySelect(){
+  const sel = document.getElementById("storySelect");
+  sel.innerHTML = db.stories.map(s=>`<option value="${s.id}" ${s.id===db.activeId?"selected":""}>${escapeHtml(s.title)}</option>`).join("");
+}
+
+function renderOverview(story){
+  main.innerHTML = `
+    <div class="page-head">
+      <h1>${escapeHtml(story.title)}</h1>
+      <p>Ringkasan cerita, statistik, dan pengaturan data.</p>
+    </div>
+    <div class="editor-card">
+      <label>Judul cerita</label>
+      <input type="text" id="ovTitle" value="${escapeHtml(story.title)}">
+      <div class="field" style="margin-top:14px">
+        <label>Sinopsis</label>
+        <textarea id="ovDesc" placeholder="Tuliskan sinopsis ceritamu di sini... sebut nama karakter untuk melihat pratinjau gambar di bawah.">${escapeHtml(story.desc)}</textarea>
+      </div>
+      <div class="toolbar"><button class="btn" id="ovSave">Simpan</button></div>
+      <div class="prose-render" id="ovPreview"></div>
+    </div>
+
+    <div class="editor-card">
+      <h2>Data &amp; cadangan</h2>
+      <p class="hint">Karakter: ${story.characters.length} · Plot: ${story.plots.length} · Adegan: ${story.scenes.length} · Dialog: ${story.dialogues.length}</p>
+      <div class="toolbar" style="justify-content:flex-start">
+        <button class="btn ghost small" id="exportBtn">Ekspor JSON</button>
+        <button class="btn ghost small" id="deleteStoryBtn">Hapus cerita ini</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("ovPreview").innerHTML = renderProseWithMentions(story.desc, story.characters);
+  attachMentionEvents(document.getElementById("ovPreview"), story);
+
+  document.getElementById("ovSave").onclick = ()=>{
+    story.title = document.getElementById("ovTitle").value || "Tanpa judul";
+    story.desc = document.getElementById("ovDesc").value;
+    saveDB(); render();
+  };
+  document.getElementById("exportBtn").onclick = ()=>{
+    const blob = new Blob([JSON.stringify(story,null,2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = story.title.replace(/\s+/g,"_")+".json";
+    a.click();
+  };
+  document.getElementById("deleteStoryBtn").onclick = ()=>{
+    if(!confirm("Hapus cerita ini beserta semua isinya?")) return;
+    db.stories = db.stories.filter(s=>s.id!==story.id);
+    db.activeId = db.stories[0] ? db.stories[0].id : null;
+    saveDB(); render();
+  };
+}
+
+function renderCharacters(story){
+  main.innerHTML = `
+    <div class="page-head">
+      <h1>Karakter</h1>
+      <p>Karakter di sini otomatis terdeteksi di seluruh teks cerita, plot, adegan, dan dialog — arahkan kursor ke namanya untuk melihat gambarnya.</p>
+    </div>
+    <div class="toolbar" style="justify-content:flex-start;margin-bottom:18px">
+      <button class="btn" id="addCharBtn">+ Tambah karakter</button>
+    </div>
+    <div id="charForm"></div>
+    <div class="grid" id="charGrid"></div>
+  `;
+  const grid = document.getElementById("charGrid");
+  if(story.characters.length===0){
+    grid.innerHTML = `<p class="hint">Belum ada karakter.</p>`;
+  }
+  story.characters.forEach(c=>{
+    const card = document.createElement("div");
+    card.className = "card char-card";
+    card.innerHTML = `
+      <button class="del" data-id="${c.id}">✕</button>
+      ${c.image ? `<img class="char-thumb" src="${c.image}">` : `<div class="char-thumb placeholder">${escapeHtml((c.name||"?")[0])}</div>`}
+      <div>
+        <h3>${escapeHtml(c.name||"Tanpa nama")}</h3>
+        <p>${escapeHtml(c.role||"")}</p>
+      </div>
+    `;
+    card.addEventListener("click",(e)=>{
+      if(e.target.classList.contains("del")) return;
+      openCharForm(story, c);
+    });
+    card.querySelector(".del").addEventListener("click",(e)=>{
+      e.stopPropagation();
+      if(!confirm("Hapus karakter ini?")) return;
+      story.characters = story.characters.filter(x=>x.id!==c.id);
+      saveDB(); render();
+    });
+    grid.appendChild(card);
+  });
+  document.getElementById("addCharBtn").onclick = ()=>openCharForm(story,null);
+}
+
+function openCharForm(story, character){
+  const formWrap = document.getElementById("charForm");
+  const isNew = !character;
+  const c = character || {id:uid(), name:"", role:"", desc:"", image:""};
+  formWrap.innerHTML = `
+    <div class="editor-card">
+      <h2>${isNew ? "Karakter baru" : "Sunting karakter"}</h2>
+      <div class="row">
+        <div class="field">
+          <label>Nama karakter</label>
+          <input type="text" id="cName" value="${escapeHtml(c.name)}" placeholder="Misal: Raina">
+        </div>
+        <div class="field">
+          <label>Peran</label>
+          <input type="text" id="cRole" value="${escapeHtml(c.role)}" placeholder="Misal: Tokoh utama">
+        </div>
+      </div>
+      <div class="field">
+        <label>Deskripsi singkat</label>
+        <textarea id="cDesc" style="min-height:80px" placeholder="Ciri fisik, kepribadian, latar belakang...">${escapeHtml(c.desc)}</textarea>
+      </div>
+      <div class="field">
+        <label>Gambar karakter (tempel URL gambar, atau unggah file)</label>
+        <div class="image-input-row">
+          <input type="text" id="cImageUrl" value="${c.image && c.image.startsWith('http') ? c.image : ''}" placeholder="https://...">
+          <input type="file" id="cImageFile" accept="image/*">
+          <img id="cImagePreview" class="image-preview" src="${c.image||''}" style="${c.image?'':'display:none'}">
+        </div>
+        <p class="hint">Nama karakter persis seperti ini akan dikenali di teks cerita/plot/adegan/dialog (tidak peka huruf besar-kecil).</p>
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost" id="cCancel">Batal</button>
+        <button class="btn" id="cSave">Simpan karakter</button>
+      </div>
+    </div>
+  `;
+  const preview = document.getElementById("cImagePreview");
+  let currentImage = c.image||"";
+  document.getElementById("cImageUrl").addEventListener("input", (e)=>{
+    currentImage = e.target.value;
+    preview.src = currentImage; preview.style.display = currentImage?"block":"none";
+  });
+  document.getElementById("cImageFile").addEventListener("change",(e)=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      currentImage = ev.target.result;
+      preview.src = currentImage; preview.style.display="block";
+    };
+    reader.readAsDataURL(f);
+  });
+  document.getElementById("cCancel").onclick = ()=>{ formWrap.innerHTML=""; };
+  document.getElementById("cSave").onclick = ()=>{
+    c.name = document.getElementById("cName").value.trim();
+    c.role = document.getElementById("cRole").value.trim();
+    c.desc = document.getElementById("cDesc").value.trim();
+    c.image = currentImage;
+    if(!c.name){ alert("Nama karakter wajib diisi."); return; }
+    if(isNew) story.characters.push(c);
+    saveDB();
+    formWrap.innerHTML = "";
+    render();
+  };
+}
+
+/* Generic list renderer for Plots and Scenes */
+function renderList(story, key, labelPlural, labelSingular){
+  main.innerHTML = `
+    <div class="page-head">
+      <h1>${labelPlural}</h1>
+      <p>Arahkan kursor ke nama karakter di dalam teks untuk melihat gambarnya.</p>
+    </div>
+    <div class="toolbar" style="justify-content:flex-start;margin-bottom:18px">
+      <button class="btn" id="addItemBtn">+ Tambah ${labelSingular}</button>
+    </div>
+    <div id="itemForm"></div>
+    <div id="itemList"></div>
+  `;
+  const listEl = document.getElementById("itemList");
+  const items = story[key];
+  if(items.length===0){
+    listEl.innerHTML = `<p class="hint">Belum ada ${labelSingular}.</p>`;
+  }
+  items.forEach(it=>{
+    const card = document.createElement("div");
+    card.className = "editor-card";
+    card.innerHTML = `
+      <div class="toolbar" style="justify-content:space-between;margin-top:0">
+        <h2 style="margin:0">${escapeHtml(it.title||"Tanpa judul")}</h2>
+        <div>
+          <button class="btn ghost small editBtn">Sunting</button>
+          <button class="btn ghost small delBtn">Hapus</button>
+        </div>
+      </div>
+      <div class="prose-render"></div>
+    `;
+    card.querySelector(".prose-render").innerHTML = renderProseWithMentions(it.body, story.characters);
+    attachMentionEvents(card.querySelector(".prose-render"), story);
+    card.querySelector(".editBtn").onclick = ()=>openItemForm(story,key,labelSingular,it);
+    card.querySelector(".delBtn").onclick = ()=>{
+      if(!confirm("Hapus item ini?")) return;
+      story[key] = story[key].filter(x=>x.id!==it.id);
+      saveDB(); render();
+    };
+    listEl.appendChild(card);
+  });
+  document.getElementById("addItemBtn").onclick = ()=>openItemForm(story,key,labelSingular,null);
+}
+
+function openItemForm(story,key,labelSingular,item){
+  const formWrap = document.getElementById("itemForm");
+  const isNew = !item;
+  const it = item || {id:uid(), title:"", body:""};
+  formWrap.innerHTML = `
+    <div class="editor-card">
+      <h2>${isNew?("Tambah "+labelSingular):("Sunting "+labelSingular)}</h2>
+      <div class="field">
+        <label>Judul</label>
+        <input type="text" id="itTitle" value="${escapeHtml(it.title)}">
+      </div>
+      <div class="field">
+        <label>Isi</label>
+        <textarea id="itBody" style="min-height:160px">${escapeHtml(it.body)}</textarea>
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost" id="itCancel">Batal</button>
+        <button class="btn" id="itSave">Simpan</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("itCancel").onclick = ()=>{ formWrap.innerHTML=""; };
+  document.getElementById("itSave").onclick = ()=>{
+    it.title = document.getElementById("itTitle").value.trim() || "Tanpa judul";
+    it.body = document.getElementById("itBody").value;
+    if(isNew) story[key].push(it);
+    saveDB(); formWrap.innerHTML=""; render();
+  };
+}
+
+/* Dialogues: structured as list of lines with character + text */
+function renderDialogues(story){
+  main.innerHTML = `
+    <div class="page-head">
+      <h1>Dialog</h1>
+      <p>Buat percakapan antar karakter. Arahkan kursor ke nama karakter pembicara untuk melihat gambarnya.</p>
+    </div>
+    <div class="toolbar" style="justify-content:flex-start;margin-bottom:18px">
+      <button class="btn" id="addDlgBtn">+ Tambah adegan dialog</button>
+    </div>
+    <div id="dlgForm"></div>
+    <div id="dlgList"></div>
+  `;
+  const listEl = document.getElementById("dlgList");
+  if(story.dialogues.length===0){
+    listEl.innerHTML = `<p class="hint">Belum ada dialog.</p>`;
+  }
+  story.dialogues.forEach(d=>{
+    const card = document.createElement("div");
+    card.className = "editor-card";
+    const linesHtml = (d.lines||[]).map(l=>{
+      const char = story.characters.find(c=>c.id===l.charId);
+      const nameHtml = char ? `<span class="char-mention" data-char="${char.id}">${escapeHtml(char.name)}</span>` : escapeHtml(l.speakerFallback||"???");
+      return `<p style="margin:6px 0"><strong>${nameHtml}:</strong> ${escapeHtml(l.text)}</p>`;
+    }).join("");
+    card.innerHTML = `
+      <div class="toolbar" style="justify-content:space-between;margin-top:0">
+        <h2 style="margin:0">${escapeHtml(d.title||"Tanpa judul")}</h2>
+        <div>
+          <button class="btn ghost small editBtn">Sunting</button>
+          <button class="btn ghost small delBtn">Hapus</button>
+        </div>
+      </div>
+      <div class="prose-render">${linesHtml || "<em style='color:var(--muted)'>Belum ada baris dialog.</em>"}</div>
+    `;
+    attachMentionEvents(card.querySelector(".prose-render"), story);
+    card.querySelector(".editBtn").onclick = ()=>openDialogueForm(story,d);
+    card.querySelector(".delBtn").onclick = ()=>{
+      if(!confirm("Hapus dialog ini?")) return;
+      story.dialogues = story.dialogues.filter(x=>x.id!==d.id);
+      saveDB(); render();
+    };
+    listEl.appendChild(card);
+  });
+  document.getElementById("addDlgBtn").onclick = ()=>openDialogueForm(story,null);
+}
+
+function openDialogueForm(story,dialogue){
+  const formWrap = document.getElementById("dlgForm");
+  const isNew = !dialogue;
+  const d = dialogue || {id:uid(), title:"", lines:[]};
+  let workingLines = JSON.parse(JSON.stringify(d.lines||[]));
+
+  function lineRowHtml(line, idx){
+    const charOptions = story.characters.map(c=>`<option value="${c.id}" ${line.charId===c.id?"selected":""}>${escapeHtml(c.name)}</option>`).join("");
+    return `
+      <div class="row" style="margin-bottom:10px;align-items:flex-start" data-idx="${idx}">
+        <div style="flex:0 0 160px">
+          <select class="lineChar">
+            <option value="">— pilih karakter —</option>
+            ${charOptions}
+          </select>
+        </div>
+        <div style="flex:1">
+          <input type="text" class="lineText" value="${escapeHtml(line.text||"")}" placeholder="Ucapan dialog...">
+        </div>
+        <button class="btn ghost small lineDel" style="flex:0 0 auto">✕</button>
+      </div>
+    `;
+  }
+
+  function renderLines(){
+    formWrap.querySelector("#dlgLines").innerHTML = workingLines.map(lineRowHtml).join("") || `<p class="hint">Belum ada baris. Tambahkan di bawah.</p>`;
+    formWrap.querySelectorAll(".row[data-idx]").forEach(row=>{
+      const idx = +row.dataset.idx;
+      row.querySelector(".lineChar").onchange = (e)=>{ workingLines[idx].charId = e.target.value; };
+      row.querySelector(".lineText").oninput = (e)=>{ workingLines[idx].text = e.target.value; };
+      row.querySelector(".lineDel").onclick = ()=>{ workingLines.splice(idx,1); renderLines(); };
+    });
+  }
+
+  formWrap.innerHTML = `
+    <div class="editor-card">
+      <h2>${isNew?"Tambah adegan dialog":"Sunting adegan dialog"}</h2>
+      <div class="field">
+        <label>Judul</label>
+        <input type="text" id="dTitle" value="${escapeHtml(d.title)}" placeholder="Misal: Pertemuan di stasiun">
+      </div>
+      <div class="field">
+        <label>Baris dialog</label>
+        <div id="dlgLines"></div>
+        <button class="btn ghost small" id="addLineBtn" style="margin-top:8px">+ Tambah baris</button>
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost" id="dCancel">Batal</button>
+        <button class="btn" id="dSave">Simpan dialog</button>
+      </div>
+    </div>
+  `;
+  renderLines();
+  document.getElementById("addLineBtn").onclick = ()=>{
+    workingLines.push({charId:"", text:""});
+    renderLines();
+  };
+  document.getElementById("dCancel").onclick = ()=>{ formWrap.innerHTML=""; };
+  document.getElementById("dSave").onclick = ()=>{
+    d.title = document.getElementById("dTitle").value.trim() || "Tanpa judul";
+    d.lines = workingLines.filter(l=>l.text && l.text.trim());
+    if(isNew) story.dialogues.push(d);
+    saveDB(); formWrap.innerHTML=""; render();
+  };
+}
+
+/* ---------- Global events ---------- */
+document.getElementById("storySelect").addEventListener("change",(e)=>{
+  db.activeId = e.target.value; saveDB(); render();
+});
+document.querySelectorAll("nav.tabs button").forEach(b=>{
+  b.addEventListener("click", ()=>{ currentTab = b.dataset.tab; render(); });
+});
+const modalBg = document.getElementById("modalBg");
+document.getElementById("newStoryBtn").onclick = ()=>{
+  document.getElementById("modalTitle").value="";
+  document.getElementById("modalDesc").value="";
+  modalBg.classList.add("open");
+};
+document.getElementById("modalCancel").onclick = ()=> modalBg.classList.remove("open");
+document.getElementById("modalCreate").onclick = ()=>{
+  const t = document.getElementById("modalTitle").value.trim();
+  const d = document.getElementById("modalDesc").value.trim();
+  if(!t){ alert("Judul cerita wajib diisi."); return; }
+  newStory(t,d);
+  modalBg.classList.remove("open");
+  currentTab="overview";
+  render();
+};
+
+render();
+</script>
+</body>
+</html>
