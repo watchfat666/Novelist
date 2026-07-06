@@ -147,6 +147,60 @@
 
   .stat-row{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0;}
   .stat{font-family:var(--ui);font-size:12px;color:var(--muted);background:var(--paper-2);padding:5px 12px;border-radius:20px;}
+
+  /* ── Timeline ── */
+  --tl:#b07d2a;
+  .tl-filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;align-items:center;}
+  .tl-filter-bar span{font-family:var(--ui);font-size:11px;color:var(--muted);margin-right:2px;}
+  .tl-pill{font-family:var(--ui);font-size:11.5px;padding:4px 12px;border-radius:20px;border:1px solid var(--rule);background:transparent;cursor:pointer;color:var(--muted);}
+  .tl-pill:hover,.tl-pill.on{background:var(--ink);color:#f3ece0;border-color:var(--ink);}
+
+  .tl-wrap{position:relative;padding-left:52px;}
+  .tl-wrap::before{content:"";position:absolute;left:20px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,transparent,var(--rule) 5%,var(--rule) 95%,transparent);}
+
+  .tl-event{position:relative;margin-bottom:28px;}
+  .tl-dot{position:absolute;left:-40px;top:6px;width:18px;height:18px;border-radius:50%;border:3px solid var(--card);box-shadow:0 0 0 2px var(--rule);z-index:1;flex-shrink:0;}
+  .tl-dot.cat-pertempuran{background:#9a3324;}
+  .tl-dot.cat-pertemuan{background:#1e6b6b;}
+  .tl-dot.cat-penemuan{background:#a9852f;}
+  .tl-dot.cat-kematian{background:#3a3028;}
+  .tl-dot.cat-kelahiran{background:#3a6e36;}
+  .tl-dot.cat-lainnya,.tl-dot.cat-peristiwa{background:#7a6f5d;}
+
+  .tl-card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;transition:box-shadow .15s;}
+  .tl-card:hover{box-shadow:0 4px 14px rgba(36,31,26,.1);}
+  .tl-date{font-family:var(--ui);font-size:11px;letter-spacing:.5px;color:var(--muted);margin:0 0 4px;text-transform:uppercase;}
+  .tl-title{font-family:var(--display);font-size:18px;margin:0 0 6px;}
+  .tl-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center;}
+  .tl-cat-tag{font-family:var(--ui);font-size:10px;text-transform:uppercase;letter-spacing:.8px;padding:2px 8px;border-radius:20px;}
+  .tl-cat-tag.cat-pertempuran{background:rgba(154,51,36,.12);color:var(--accent);}
+  .tl-cat-tag.cat-pertemuan{background:rgba(30,107,107,.12);color:var(--teal);}
+  .tl-cat-tag.cat-penemuan{background:rgba(169,133,47,.15);color:var(--gold);}
+  .tl-cat-tag.cat-kematian{background:rgba(36,31,26,.1);color:#3a3028;}
+  .tl-cat-tag.cat-kelahiran{background:rgba(58,110,54,.12);color:#3a6e36;}
+  .tl-cat-tag.cat-lainnya,.tl-cat-tag.cat-peristiwa{background:var(--paper-2);color:var(--muted);}
+  .tl-imp{font-family:var(--ui);font-size:10px;padding:2px 8px;border-radius:20px;background:var(--paper-2);color:var(--muted);}
+  .tl-imp.krusial{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
+  .tl-imp.penting{background:#dbeafe;color:#1e40af;}
+  .tl-links{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+  .tl-link-tag{font-family:var(--ui);font-size:11px;padding:3px 9px;border-radius:20px;cursor:help;}
+  .tl-link-char{background:rgba(154,51,36,.09);color:var(--accent);border:1px solid rgba(154,51,36,.2);}
+  .tl-link-char.char-mention{font-weight:600;border-bottom:none;}
+  .tl-link-item{background:rgba(30,107,107,.09);color:var(--teal);border:1px solid rgba(30,107,107,.2);}
+  .tl-link-item.item-mention{font-weight:600;border-bottom:none;}
+  .tl-actions{display:flex;gap:6px;margin-top:10px;}
+  .tl-desc{font-family:var(--body);font-size:14.5px;line-height:1.75;white-space:pre-wrap;color:var(--ink);margin-top:8px;padding-top:8px;border-top:1px dashed var(--rule);}
+
+  .tl-empty{padding:50px 20px;text-align:center;color:var(--muted);font-family:var(--ui);}
+
+  /* Timeline nav color */
+  nav.tabs button[data-tab="timeline"].active{background:#7a4f1a;}
+
+  /* Tag checklist in form */
+  .tag-check-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px;}
+  .tag-check-list label{display:flex;align-items:center;gap:5px;font-family:var(--ui);font-size:12px;text-transform:none;letter-spacing:0;color:var(--ink);cursor:pointer;background:var(--paper-2);padding:4px 10px;border-radius:20px;border:1px solid var(--rule);}
+  .tag-check-list label:hover{background:var(--rule);}
+  .tag-check-list input[type=checkbox]{width:auto;padding:0;margin:0;}
 </style>
 </head>
 <body>
@@ -174,6 +228,7 @@
       </nav>
       <div class="tab-group-label" style="margin-top:10px">Penulisan</div>
       <nav class="tabs">
+        <button data-tab="timeline"><span class="ico">⏳</span> Timeline Cerita</button>
         <button data-tab="plots"><span class="ico">🗺️</span> Plot</button>
         <button data-tab="scenes"><span class="ico">🎬</span> Adegan</button>
         <button data-tab="dialogues"><span class="ico">💬</span> Dialog</button>
@@ -235,6 +290,7 @@ function loadDB(){
 function migrateStory(s){
   if(!s.items) s.items = [];
   if(!s.worldSetting) s.worldSetting = defaultWorldSetting();
+  if(!s.timeline) s.timeline = [];
   return s;
 }
 function defaultWorldSetting(){
@@ -255,7 +311,7 @@ function getActiveStory(){
 function newStory(title,desc){
   const s={
     id:uid(),title:title||"Cerita Tanpa Judul",desc:desc||"",
-    characters:[],items:[],plots:[],scenes:[],dialogues:[],
+    characters:[],items:[],plots:[],scenes:[],dialogues:[],timeline:[],
     worldSetting:defaultWorldSetting()
   };
   db.stories.push(s);
@@ -360,6 +416,7 @@ function render(){
   else if(currentTab==="characters") renderCharacters(story);
   else if(currentTab==="items") renderItems(story);
   else if(currentTab==="worldsetting") renderWorldSetting(story);
+  else if(currentTab==="timeline") renderTimeline(story);
   else if(currentTab==="plots") renderList(story,"plots","Plot","plot");
   else if(currentTab==="scenes") renderList(story,"scenes","Adegan","adegan");
   else if(currentTab==="dialogues") renderDialogues(story);
@@ -393,6 +450,7 @@ function renderOverview(story){
       <div class="stat-row">
         <span class="stat">🧑 Karakter: ${story.characters.length}</span>
         <span class="stat">⚔️ Item: ${story.items.length}</span>
+        <span class="stat">⏳ Timeline: ${(story.timeline||[]).length}</span>
         <span class="stat">🗺️ Plot: ${story.plots.length}</span>
         <span class="stat">🎬 Adegan: ${story.scenes.length}</span>
         <span class="stat">💬 Dialog: ${story.dialogues.length}</span>
@@ -721,6 +779,198 @@ function openListItemForm(story,key,labelSingular,item){
     it.body=document.getElementById("liBody").value;
     if(isNew) story[key].push(it);
     saveDB(); fw.innerHTML=""; render();
+  };
+}
+
+/* ═══════════════════════════════════
+   TIMELINE
+═══════════════════════════════════ */
+const TL_CATS = ["Pertempuran","Pertemuan","Penemuan","Kematian","Kelahiran","Peristiwa","Lainnya"];
+const TL_IMP  = ["Biasa","Penting","Krusial"];
+
+function tlCatKey(cat){ return (cat||"lainnya").toLowerCase().replace(/\s+/g,"-"); }
+
+function renderTimeline(story){
+  const tl = (story.timeline||[]);
+
+  // Sort by era→chapter→order then date string lexically as fallback
+  const sorted = [...tl].sort((a,b)=>{
+    const ea=+(a.era||0), eb=+(b.era||0);
+    if(ea!==eb) return ea-eb;
+    const ca=+(a.chapter||0), cb=+(b.chapter||0);
+    if(ca!==cb) return ca-cb;
+    const oa=+(a.order||0), ob=+(b.order||0);
+    if(oa!==ob) return oa-ob;
+    return (a.date||"").localeCompare(b.date||"");
+  });
+
+  // Build unique category list from data
+  const usedCats = [...new Set(tl.map(e=>e.category||"Lainnya"))];
+  let activeCatFilter = null;
+  let activeImpFilter = null;
+
+  function buildView(){
+    let visible = sorted;
+    if(activeCatFilter) visible = visible.filter(e=>(e.category||"Lainnya")===activeCatFilter);
+    if(activeImpFilter) visible = visible.filter(e=>(e.importance||"Biasa")===activeImpFilter);
+
+    const formWrap = document.getElementById("tlForm");
+    const listWrap = document.getElementById("tlList");
+
+    // render filter bar
+    document.getElementById("tlFilterBar").innerHTML = `
+      <span>Kategori:</span>
+      ${["Semua",...TL_CATS].map(c=>`<button class="tl-pill ${activeCatFilter===c?"on":""}" data-fcat="${c==="Semua"?"":c}">${c}</button>`).join("")}
+      <span style="margin-left:8px">Urgensi:</span>
+      ${["Semua",...TL_IMP].map(i=>`<button class="tl-pill ${activeImpFilter===i?"on":""}" data-fimp="${i==="Semua"?"":i}">${i}</button>`).join("")}
+    `;
+    document.querySelectorAll(".tl-pill[data-fcat]").forEach(b=>{
+      b.onclick=()=>{ activeCatFilter=b.dataset.fcat||null; buildView(); };
+    });
+    document.querySelectorAll(".tl-pill[data-fimp]").forEach(b=>{
+      b.onclick=()=>{ activeImpFilter=b.dataset.fimp||null; buildView(); };
+    });
+
+    if(!visible.length){
+      listWrap.innerHTML=`<div class="tl-empty">
+        <div style="font-size:36px;margin-bottom:12px">⌛</div>
+        <div>${tl.length===0?"Belum ada peristiwa. Mulai catat sejarah ceritamu!":"Tidak ada peristiwa yang cocok dengan filter."}</div>
+      </div>`;
+      return;
+    }
+
+    listWrap.innerHTML="";
+    // Group by era
+    const byEra = {};
+    visible.forEach(e=>{ const k=e.era||"0"; (byEra[k]=byEra[k]||[]).push(e); });
+
+    Object.keys(byEra).sort((a,b)=>+a-+b).forEach(eraKey=>{
+      const eraEvents = byEra[eraKey];
+      const eraLabel = eraEvents[0].eraName ? `Era ${eraKey}: ${eraEvents[0].eraName}` : (eraKey==="0" ? "Tanpa Era" : `Era ${eraKey}`);
+      const heading = document.createElement("div");
+      heading.innerHTML=`<h3 style="font-family:var(--display);font-size:15px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:0 0 16px;padding-bottom:6px;border-bottom:1px solid var(--rule)">${escapeHtml(eraLabel)}</h3>`;
+      listWrap.appendChild(heading);
+
+      const wrap = document.createElement("div");
+      wrap.className="tl-wrap";
+      eraEvents.forEach(ev=>{
+        const catKey = tlCatKey(ev.category);
+        const impClass = (ev.importance||"biasa").toLowerCase();
+        // linked chars
+        const linkedChars = (ev.charIds||[]).map(id=>{
+          const c=story.characters.find(x=>x.id===id);
+          return c?`<span class="tl-link-tag tl-link-char char-mention" data-char="${c.id}">${escapeHtml(c.name)}</span>`:"";
+        }).join("");
+        // linked items
+        const linkedItems = (ev.itemIds||[]).map(id=>{
+          const it=story.items.find(x=>x.id===id);
+          return it?`<span class="tl-link-tag tl-link-item item-mention" data-item="${it.id}">${escapeHtml(it.name)}</span>`:"";
+        }).join("");
+
+        const evEl = document.createElement("div");
+        evEl.className="tl-event";
+        evEl.innerHTML=`
+          <div class="tl-dot cat-${catKey}"></div>
+          <div class="tl-card">
+            <p class="tl-date">${escapeHtml(ev.date||"Tanpa tanggal")}${ev.chapter?" · Bab "+escapeHtml(ev.chapter):""}</p>
+            <h3 class="tl-title">${escapeHtml(ev.title||"Tanpa judul")}</h3>
+            <div class="tl-meta">
+              <span class="tl-cat-tag cat-${catKey}">${escapeHtml(ev.category||"Lainnya")}</span>
+              <span class="tl-imp ${impClass}">${escapeHtml(ev.importance||"Biasa")}</span>
+            </div>
+            ${(linkedChars||linkedItems)?`<div class="tl-links">${linkedChars}${linkedItems}</div>`:""}
+            ${ev.desc?`<div class="tl-desc"></div>`:""}
+            <div class="tl-actions">
+              <button class="btn ghost small evEdit">Sunting</button>
+              <button class="btn ghost small evDel">Hapus</button>
+            </div>
+          </div>`;
+        if(ev.desc){
+          proRender(evEl.querySelector(".tl-desc"), ev.desc, story);
+        }
+        attachMentionEvents(evEl, story);
+        evEl.querySelector(".evEdit").onclick=()=>openTimelineEventForm(story,ev,buildView);
+        evEl.querySelector(".evDel").onclick=()=>{
+          if(!confirm("Hapus peristiwa ini?")) return;
+          story.timeline=story.timeline.filter(x=>x.id!==ev.id);
+          saveDB(); buildView();
+        };
+        wrap.appendChild(evEl);
+      });
+      listWrap.appendChild(wrap);
+    });
+  }
+
+  main.innerHTML=`
+    <div class="page-head">
+      <h1>Timeline Cerita</h1>
+      <p>Susun urutan peristiwa dalam cerita. Hover nama karakter atau item pada deskripsi &amp; tautan untuk melihat detailnya.</p>
+    </div>
+    <div class="toolbar" style="justify-content:flex-start;margin-bottom:10px">
+      <button class="btn" id="addTlEvBtn" style="background:#7a4f1a;border-color:#7a4f1a">+ Tambah peristiwa</button>
+    </div>
+    <div class="tl-filter-bar" id="tlFilterBar"></div>
+    <div id="tlForm"></div>
+    <div id="tlList"></div>
+  `;
+  buildView();
+  document.getElementById("addTlEvBtn").onclick=()=>openTimelineEventForm(story,null,buildView);
+}
+
+function openTimelineEventForm(story, event, onSave){
+  const fw = document.getElementById("tlForm");
+  const isNew = !event;
+  const ev = event||{id:uid(),title:"",date:"",era:"",eraName:"",chapter:"",order:"",category:"Peristiwa",importance:"Biasa",desc:"",charIds:[],itemIds:[]};
+
+  const catOpts  = TL_CATS.map(c=>`<option value="${c}" ${ev.category===c?"selected":""}>${c}</option>`).join("");
+  const impOpts  = TL_IMP.map(i=>`<option value="${i}" ${ev.importance===i?"selected":""}>${i}</option>`).join("");
+  const charChecks = story.characters.map(c=>`
+    <label><input type="checkbox" class="tlCh" value="${c.id}" ${(ev.charIds||[]).includes(c.id)?"checked":""}> ${escapeHtml(c.name)}</label>`).join("");
+  const itemChecks = story.items.map(it=>`
+    <label><input type="checkbox" class="tlIt" value="${it.id}" ${(ev.itemIds||[]).includes(it.id)?"checked":""}> ${escapeHtml(it.name)}</label>`).join("");
+
+  fw.innerHTML=`
+    <div class="editor-card" style="border-left:4px solid #7a4f1a">
+      <h2>${isNew?"Peristiwa baru":"Sunting peristiwa"}</h2>
+      <div class="row">
+        <div class="field"><label>Judul peristiwa</label><input type="text" id="evTitle" value="${escapeHtml(ev.title)}" placeholder="Misal: Pertempuran Ngarai Sunyi"></div>
+        <div class="field"><label>Tanggal / Waktu cerita</label><input type="text" id="evDate" value="${escapeHtml(ev.date)}" placeholder="Misal: Tahun 312, Bulan Fajar, Hari ke-3"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Era (angka urut)</label><input type="text" id="evEra" value="${escapeHtml(ev.era)}" placeholder="0, 1, 2, …"></div>
+        <div class="field"><label>Nama era (opsional)</label><input type="text" id="evEraName" value="${escapeHtml(ev.eraName)}" placeholder="Misal: Era Kegelapan"></div>
+        <div class="field"><label>Bab / Chapter</label><input type="text" id="evChapter" value="${escapeHtml(ev.chapter)}" placeholder="Misal: 5"></div>
+        <div class="field"><label>Urutan dalam bab</label><input type="text" id="evOrder" value="${escapeHtml(ev.order)}" placeholder="1, 2, …"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Kategori</label><select id="evCat">${catOpts}</select></div>
+        <div class="field"><label>Tingkat kepentingan</label><select id="evImp">${impOpts}</select></div>
+      </div>
+      <div class="field"><label>Deskripsi peristiwa</label><textarea id="evDesc" style="min-height:100px">${escapeHtml(ev.desc)}</textarea></div>
+      ${story.characters.length?`<div class="field"><label>Karakter yang terlibat</label><div class="tag-check-list">${charChecks}</div></div>`:""}
+      ${story.items.length?`<div class="field"><label>Item yang terlibat</label><div class="tag-check-list">${itemChecks}</div></div>`:""}
+      <div class="toolbar">
+        <button class="btn ghost" id="evCancel">Batal</button>
+        <button class="btn" id="evSave" style="background:#7a4f1a;border-color:#7a4f1a">Simpan peristiwa</button>
+      </div>
+    </div>`;
+  fw.scrollIntoView({behavior:"smooth",block:"start"});
+  document.getElementById("evCancel").onclick=()=>{ fw.innerHTML=""; };
+  document.getElementById("evSave").onclick=()=>{
+    ev.title    = document.getElementById("evTitle").value.trim();
+    ev.date     = document.getElementById("evDate").value.trim();
+    ev.era      = document.getElementById("evEra").value.trim();
+    ev.eraName  = document.getElementById("evEraName").value.trim();
+    ev.chapter  = document.getElementById("evChapter").value.trim();
+    ev.order    = document.getElementById("evOrder").value.trim();
+    ev.category = document.getElementById("evCat").value;
+    ev.importance=document.getElementById("evImp").value;
+    ev.desc     = document.getElementById("evDesc").value;
+    ev.charIds  = [...fw.querySelectorAll(".tlCh:checked")].map(c=>c.value);
+    ev.itemIds  = [...fw.querySelectorAll(".tlIt:checked")].map(i=>i.value);
+    if(!ev.title){alert("Judul peristiwa wajib diisi.");return;}
+    if(isNew) story.timeline.push(ev);
+    saveDB(); fw.innerHTML=""; onSave();
   };
 }
 
