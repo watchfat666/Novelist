@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pena — Studio Penulisan Novel</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#9a3324">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pena">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     --ink:#241f1a;
@@ -201,6 +209,24 @@
   .tag-check-list label{display:flex;align-items:center;gap:5px;font-family:var(--ui);font-size:12px;text-transform:none;letter-spacing:0;color:var(--ink);cursor:pointer;background:var(--paper-2);padding:4px 10px;border-radius:20px;border:1px solid var(--rule);}
   .tag-check-list label:hover{background:var(--rule);}
   .tag-check-list input[type=checkbox]{width:auto;padding:0;margin:0;}
+
+  /* Google Drive sync widget */
+  .drive-box{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:12px;}
+  .drive-status{display:flex;align-items:center;gap:7px;font-family:var(--ui);font-size:11.5px;color:var(--muted);margin-bottom:9px;}
+  .drive-dot{width:8px;height:8px;border-radius:50%;background:#b3a894;flex-shrink:0;}
+  .drive-dot.on{background:#3a6e36;}
+  .drive-dot.busy{background:var(--gold);animation:drivePulse 1s infinite;}
+  @keyframes drivePulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .drive-actions{display:flex;flex-wrap:wrap;gap:6px;}
+  .drive-actions .btn{flex:1;}
+  .drive-auto{display:flex;align-items:center;gap:6px;margin-top:9px;font-family:var(--ui);font-size:11px;color:var(--muted);}
+  .drive-auto input{width:auto;}
+  .drive-link{background:none;border:none;color:var(--teal);font-family:var(--ui);font-size:10.5px;text-decoration:underline;cursor:pointer;padding:0;margin-top:8px;display:inline-block;}
+  .modal.wide{max-width:520px;}
+  .steps-box{background:var(--paper-2);border-radius:6px;padding:12px 14px;font-family:var(--ui);font-size:12px;line-height:1.7;color:var(--ink);margin:10px 0;}
+  .steps-box a{color:var(--teal);}
+  .install-btn{width:100%;margin-top:7px;padding:8px;background:transparent;border:1px dashed var(--teal);color:var(--teal);font-family:var(--ui);font-size:12.5px;border-radius:4px;cursor:pointer;display:none;}
+  .install-btn.show{display:block;}
 </style>
 </head>
 <body>
@@ -235,8 +261,19 @@
       </nav>
     </div>
 
+    <div class="tab-group-label" style="margin-top:10px">Penyimpanan</div>
+    <div class="drive-box">
+      <div class="drive-status"><span class="drive-dot" id="driveDot"></span><span id="driveStatusText">Google Drive: belum terhubung</span></div>
+      <div class="drive-actions" id="driveActionsArea">
+        <button class="btn ghost small teal" id="driveConnectBtn">Hubungkan Drive</button>
+      </div>
+      <label class="drive-auto"><input type="checkbox" id="driveAutoChk"> Auto-sync tiap perubahan</label>
+      <button class="drive-link" id="driveSettingsLink">Pengaturan Google Drive</button>
+    </div>
+    <button class="install-btn" id="installAppBtn">📲 Pasang Pena ke layar utama</button>
+
     <div class="sidebar-foot">
-      Data tersimpan otomatis di browser (localStorage). Gunakan tombol Ekspor di Ringkasan untuk mencadangkan ceritamu.
+      Data tersimpan otomatis di perangkat ini (localStorage) &amp; bisa disinkronkan ke Google Drive. Gunakan tombol Ekspor di Ringkasan untuk cadangan manual.
     </div>
   </aside>
 
@@ -262,6 +299,31 @@
     <div class="toolbar">
       <button class="btn ghost" id="modalCancel">Batal</button>
       <button class="btn" id="modalCreate">Buat cerita</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal pengaturan Google Drive -->
+<div class="modal-bg" id="driveModalBg">
+  <div class="modal wide">
+    <h3>Hubungkan Google Drive</h3>
+    <p class="hint" style="margin-top:-6px">Pena menyimpan seluruh database cerita sebagai satu file <code>pena-novel-database.json</code> di Drive-mu sendiri. Untuk mengaktifkannya, kamu perlu membuat OAuth Client ID Google sekali saja (gratis).</p>
+    <div class="steps-box">
+      1. Buka <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console → Credentials</a><br>
+      2. Buat proyek baru (atau pakai yang sudah ada)<br>
+      3. Aktifkan <strong>Google Drive API</strong> di menu "Enable APIs &amp; Services"<br>
+      4. Buat kredensial → <strong>OAuth client ID</strong> → tipe <strong>Web application</strong><br>
+      5. Di "Authorized JavaScript origins", tambahkan alamat website Pena-mu (mis. <code>https://namamu.github.io</code>)<br>
+      6. Salin <strong>Client ID</strong> yang dihasilkan, tempel di bawah ini
+    </div>
+    <div class="field">
+      <label>Google OAuth Client ID</label>
+      <input type="text" id="driveClientIdInput" placeholder="xxxxxxxxxx-xxxxxxxxxxxxxxxx.apps.googleusercontent.com">
+    </div>
+    <p class="hint">Client ID ini tersimpan lokal di browsermu saja, tidak dikirim ke server manapun selain Google.</p>
+    <div class="toolbar">
+      <button class="btn ghost" id="driveModalCancel">Tutup</button>
+      <button class="btn teal" id="driveModalSave">Simpan &amp; hubungkan</button>
     </div>
   </div>
 </div>
@@ -296,7 +358,10 @@ function migrateStory(s){
 function defaultWorldSetting(){
   return {geografi:"",kekuatan:"",sejarah:"",faksi:"",hukum:"",budaya:"",bahasa:"",catatan:""};
 }
-function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+function saveDB(){
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+  if(typeof driveQueueSync==="function") driveQueueSync();
+}
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 let db = loadDB();
@@ -1080,6 +1145,229 @@ document.getElementById("modalCreate").onclick=()=>{
   currentTab="overview";
   render();
 };
+
+/* ═══════════════════════════════════
+   GOOGLE DRIVE SYNC
+═══════════════════════════════════ */
+const DRIVE_SCOPE   = "https://www.googleapis.com/auth/drive.file";
+const DRIVE_FILENAME= "pena-novel-database.json";
+const LS_CLIENT_ID  = "pena_drive_client_id";
+const LS_FILE_ID    = "pena_drive_file_id";
+const LS_AUTOSYNC   = "pena_drive_autosync";
+const LS_TOKEN      = "pena_drive_token"; // {access_token, expires_at}
+
+let driveTokenClient=null;
+let driveAccessToken=null;
+let driveSyncTimer=null;
+let driveBusy=false;
+
+function getClientId(){ return localStorage.getItem(LS_CLIENT_ID)||""; }
+function setClientId(v){ localStorage.setItem(LS_CLIENT_ID, v); }
+function getFileId(){ return localStorage.getItem(LS_FILE_ID)||""; }
+function setFileId(v){ localStorage.setItem(LS_FILE_ID, v); }
+function isAutoSyncOn(){ return localStorage.getItem(LS_AUTOSYNC)==="1"; }
+function setAutoSync(v){ localStorage.setItem(LS_AUTOSYNC, v?"1":"0"); }
+
+function saveTokenCache(tok){
+  const expires_at = Date.now() + ((tok.expires_in||3300)*1000);
+  localStorage.setItem(LS_TOKEN, JSON.stringify({access_token:tok.access_token, expires_at}));
+  driveAccessToken = tok.access_token;
+}
+function loadTokenCache(){
+  try{
+    const raw=localStorage.getItem(LS_TOKEN);
+    if(!raw) return null;
+    const t=JSON.parse(raw);
+    if(t.expires_at > Date.now()+30000){ driveAccessToken=t.access_token; return t; }
+  }catch(e){}
+  return null;
+}
+
+function setDriveStatus(text, state){
+  const dot=document.getElementById("driveDot");
+  const txt=document.getElementById("driveStatusText");
+  if(!dot||!txt) return;
+  txt.textContent = text;
+  dot.className = "drive-dot" + (state==="on"?" on":state==="busy"?" busy":"");
+}
+
+function renderDriveActions(){
+  const area=document.getElementById("driveActionsArea");
+  if(!area) return;
+  const connected = !!(getClientId() && loadTokenCache());
+  if(connected){
+    area.innerHTML = `
+      <button class="btn ghost small teal" id="driveSaveNowBtn">⇪ Simpan ke Drive</button>
+      <button class="btn ghost small teal" id="driveLoadNowBtn">⇩ Muat dari Drive</button>
+      <button class="btn ghost small" id="driveDisconnectBtn">Putuskan</button>`;
+    document.getElementById("driveSaveNowBtn").onclick=()=>driveSaveAll(true);
+    document.getElementById("driveLoadNowBtn").onclick=()=>driveLoadAll(true);
+    document.getElementById("driveDisconnectBtn").onclick=driveDisconnect;
+    setDriveStatus("Google Drive: terhubung","on");
+  } else if(getClientId()){
+    area.innerHTML = `<button class="btn ghost small teal" id="driveConnectBtn">Hubungkan Drive</button>`;
+    document.getElementById("driveConnectBtn").onclick=driveConnect;
+    setDriveStatus("Google Drive: perlu masuk lagi","off");
+  } else {
+    area.innerHTML = `<button class="btn ghost small teal" id="driveConnectBtn">Hubungkan Drive</button>`;
+    document.getElementById("driveConnectBtn").onclick=driveConnect;
+    setDriveStatus("Google Drive: belum terhubung","off");
+  }
+  const autoChk=document.getElementById("driveAutoChk");
+  if(autoChk){ autoChk.checked=isAutoSyncOn(); autoChk.onchange=()=>setAutoSync(autoChk.checked); }
+}
+
+function driveConnect(){
+  const clientId=getClientId();
+  if(!clientId){ openDriveModal(); return; }
+  if(typeof google==="undefined" || !google.accounts){
+    alert("Layanan Google belum siap dimuat, coba lagi sesaat lagi.");
+    return;
+  }
+  if(!driveTokenClient){
+    driveTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: DRIVE_SCOPE,
+      callback: (resp)=>{
+        if(resp.error){ setDriveStatus("Google Drive: gagal masuk","off"); alert("Gagal menghubungkan Drive: "+resp.error); return; }
+        saveTokenCache(resp);
+        renderDriveActions();
+        driveFindOrCreateFile().then(()=>{ if(isAutoSyncOn()) driveSaveAll(false); });
+      }
+    });
+  }
+  setDriveStatus("Google Drive: menghubungkan...","busy");
+  driveTokenClient.requestAccessToken({prompt: loadTokenCache()?"":"consent"});
+}
+
+function driveDisconnect(){
+  localStorage.removeItem(LS_TOKEN);
+  driveAccessToken=null;
+  renderDriveActions();
+}
+
+async function driveApi(path, opts){
+  const token = driveAccessToken || (loadTokenCache()||{}).access_token;
+  if(!token) throw new Error("Belum terhubung ke Drive");
+  const headers = Object.assign({"Authorization":"Bearer "+token}, (opts&&opts.headers)||{});
+  const res = await fetch(path, Object.assign({}, opts, {headers}));
+  if(res.status===401){ driveDisconnect(); throw new Error("Sesi Drive kedaluwarsa, silakan hubungkan ulang."); }
+  return res;
+}
+
+async function driveFindOrCreateFile(){
+  let fileId=getFileId();
+  if(fileId) return fileId;
+  const q=encodeURIComponent(`name='${DRIVE_FILENAME}' and trashed=false`);
+  const res=await driveApi(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`);
+  const data=await res.json();
+  if(data.files && data.files.length){
+    fileId=data.files[0].id; setFileId(fileId); return fileId;
+  }
+  const createRes=await driveApi("https://www.googleapis.com/drive/v3/files",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name:DRIVE_FILENAME, mimeType:"application/json"})
+  });
+  const created=await createRes.json();
+  fileId=created.id; setFileId(fileId);
+  return fileId;
+}
+
+async function driveSaveAll(manual){
+  if(driveBusy) return;
+  if(!getClientId()){ if(manual) openDriveModal(); return; }
+  if(!driveAccessToken && !loadTokenCache()){ if(manual) driveConnect(); return; }
+  driveBusy=true; setDriveStatus("Google Drive: menyimpan...","busy");
+  try{
+    const fileId=await driveFindOrCreateFile();
+    const res=await driveApi(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(db)
+    });
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    setDriveStatus("Google Drive: tersimpan ✓","on");
+    if(manual) setTimeout(()=>renderDriveActions(),1600);
+  }catch(e){
+    setDriveStatus("Google Drive: gagal menyimpan","off");
+    if(manual) alert("Gagal menyimpan ke Drive: "+e.message);
+  }finally{ driveBusy=false; }
+}
+
+async function driveLoadAll(manual){
+  if(!getClientId()){ if(manual) openDriveModal(); return; }
+  if(!driveAccessToken && !loadTokenCache()){ if(manual) driveConnect(); return; }
+  if(manual && !confirm("Memuat dari Drive akan menimpa data cerita di perangkat ini dengan versi dari Drive. Lanjutkan?")) return;
+  setDriveStatus("Google Drive: memuat...","busy");
+  try{
+    const fileId=await driveFindOrCreateFile();
+    const res=await driveApi(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const remote=await res.json();
+    if(remote && Array.isArray(remote.stories)){
+      db = remote; db.stories=db.stories.map(migrateStory);
+      if(!db.activeId && db.stories.length) db.activeId=db.stories[0].id;
+      localStorage.setItem(DB_KEY, JSON.stringify(db));
+      render();
+    }
+    setDriveStatus("Google Drive: dimuat ✓","on");
+    if(manual) setTimeout(()=>renderDriveActions(),1600);
+  }catch(e){
+    setDriveStatus("Google Drive: gagal memuat","off");
+    if(manual) alert("Gagal memuat dari Drive: "+e.message);
+  }
+}
+
+function driveQueueSync(){
+  if(!isAutoSyncOn()) return;
+  if(!getClientId() || !(driveAccessToken||loadTokenCache())) return;
+  clearTimeout(driveSyncTimer);
+  driveSyncTimer=setTimeout(()=>driveSaveAll(false), 1800);
+}
+
+function openDriveModal(){
+  document.getElementById("driveClientIdInput").value=getClientId();
+  document.getElementById("driveModalBg").classList.add("open");
+}
+document.getElementById("driveSettingsLink").onclick=openDriveModal;
+document.getElementById("driveModalCancel").onclick=()=>document.getElementById("driveModalBg").classList.remove("open");
+document.getElementById("driveModalSave").onclick=()=>{
+  const v=document.getElementById("driveClientIdInput").value.trim();
+  if(!v){ alert("Masukkan Client ID terlebih dahulu."); return; }
+  setClientId(v);
+  document.getElementById("driveModalBg").classList.remove("open");
+  driveConnect();
+};
+
+loadTokenCache();
+renderDriveActions();
+
+/* ═══════════════════════════════════
+   PWA: SERVICE WORKER + INSTALL PROMPT
+═══════════════════════════════════ */
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+}
+let deferredInstallPrompt=null;
+window.addEventListener("beforeinstallprompt",(e)=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  const btn=document.getElementById("installAppBtn");
+  if(btn) btn.classList.add("show");
+});
+const installBtnEl=document.getElementById("installAppBtn");
+if(installBtnEl){
+  installBtnEl.onclick=async ()=>{
+    if(!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt=null;
+    installBtnEl.classList.remove("show");
+  };
+}
 
 render();
 </script>
