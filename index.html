@@ -358,8 +358,36 @@ function migrateStory(s){
 function defaultWorldSetting(){
   return {geografi:"",kekuatan:"",sejarah:"",faksi:"",hukum:"",budaya:"",bahasa:"",catatan:""};
 }
+function compressImage(file, maxDim, quality){
+  return new Promise((resolve, reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error("Gagal membaca file gambar"));
+    reader.onload=(ev)=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error("File bukan gambar yang valid"));
+      img.onload=()=>{
+        let {width,height}=img;
+        if(width>maxDim||height>maxDim){
+          if(width>height){ height=Math.round(height*(maxDim/width)); width=maxDim; }
+          else{ width=Math.round(width*(maxDim/height)); height=maxDim; }
+        }
+        const canvas=document.createElement("canvas");
+        canvas.width=width; canvas.height=height;
+        canvas.getContext("2d").drawImage(img,0,0,width,height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 function saveDB(){
-  localStorage.setItem(DB_KEY, JSON.stringify(db));
+  try{
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+  }catch(e){
+    alert("Penyimpanan lokal penuh (localStorage). Ini biasanya karena terlalu banyak/besar foto yang diunggah. Coba kompres/kurangi foto, atau hapus foto yang tidak perlu di beberapa karakter/item, lalu simpan ulang.");
+    return;
+  }
   if(typeof driveQueueSync==="function") driveQueueSync();
 }
 function uid(){ return Math.random().toString(36).slice(2,10); }
@@ -632,7 +660,10 @@ function openCharForm(story,character){
   document.getElementById("cImgUrl").oninput=(e)=>{ curImg=e.target.value; prev.src=curImg; prev.style.display=curImg?"block":"none"; };
   document.getElementById("cImgFile").onchange=(e)=>{
     const f=e.target.files[0]; if(!f) return;
-    const r=new FileReader(); r.onload=(ev)=>{ curImg=ev.target.result; prev.src=curImg; prev.style.display="block"; }; r.readAsDataURL(f);
+    prev.style.display="block"; prev.style.opacity="0.4";
+    compressImage(f, 640, 0.72).then((dataUrl)=>{
+      curImg=dataUrl; prev.src=curImg; prev.style.opacity="1";
+    }).catch((err)=>{ alert(err.message); prev.style.opacity="1"; });
   };
   document.getElementById("cCancel").onclick=()=>fw.innerHTML="";
   document.getElementById("cSave").onclick=()=>{
@@ -717,7 +748,10 @@ function openItemObjForm(story,item){
   document.getElementById("iImgUrl").oninput=(e)=>{ curImg=e.target.value; prev.src=curImg; prev.style.display=curImg?"block":"none"; };
   document.getElementById("iImgFile").onchange=(e)=>{
     const f=e.target.files[0]; if(!f) return;
-    const r=new FileReader(); r.onload=(ev)=>{ curImg=ev.target.result; prev.src=curImg; prev.style.display="block"; }; r.readAsDataURL(f);
+    prev.style.display="block"; prev.style.opacity="0.4";
+    compressImage(f, 640, 0.72).then((dataUrl)=>{
+      curImg=dataUrl; prev.src=curImg; prev.style.opacity="1";
+    }).catch((err)=>{ alert(err.message); prev.style.opacity="1"; });
   };
   document.getElementById("iCancel").onclick=()=>fw.innerHTML="";
   document.getElementById("iSave").onclick=()=>{
@@ -1308,7 +1342,13 @@ async function driveLoadAll(manual){
     if(remote && Array.isArray(remote.stories)){
       db = remote; db.stories=db.stories.map(migrateStory);
       if(!db.activeId && db.stories.length) db.activeId=db.stories[0].id;
-      localStorage.setItem(DB_KEY, JSON.stringify(db));
+      try{
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
+      }catch(quotaErr){
+        setDriveStatus("Google Drive: dimuat, tapi tak muat di HP ini","off");
+        alert("Data dari Drive berhasil diambil, tapi ukurannya terlalu besar untuk disimpan di penyimpanan lokal perangkat ini (biasanya karena foto-foto berukuran besar). Kompres/kurangi foto karakter atau item di perangkat lain, lalu sinkron ulang.");
+        return;
+      }
       render();
     }
     setDriveStatus("Google Drive: dimuat ✓","on");
