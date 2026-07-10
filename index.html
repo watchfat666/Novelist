@@ -84,11 +84,11 @@
     .bottom-nav{display:block;}
     .sidebar .tabs{display:none;}
     .sidebar .tab-group-label{display:none;}
-    .sidebar{position:static;height:auto;overflow-y:visible;}
+    main{padding-bottom:92px;}
   }
 
   main{padding:36px 48px;max-width:980px;}
-  @media(max-width:900px){main{padding:22px;padding-bottom:92px;}}
+  @media(max-width:900px){main{padding:22px;}}
   .page-head{margin-bottom:26px;}
   .page-head h1{font-family:var(--display);font-size:32px;margin:0 0 4px;}
   .page-head p{color:var(--muted);font-family:var(--ui);font-size:13.5px;margin:0;}
@@ -396,6 +396,24 @@ function migrateStory(s){
 function defaultWorldSetting(){
   return {geografi:"",kekuatan:"",sejarah:"",faksi:"",hukum:"",budaya:"",bahasa:"",catatan:""};
 }
+function readFileAsDataURL(file){
+  return new Promise((resolve, reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error("Gagal membaca file gambar"));
+    reader.onload=(ev)=>resolve(ev.target.result);
+    reader.readAsDataURL(file);
+  });
+}
+function handleImagePick(file){
+  const MAX_GIF_MB = 3;
+  if(file.type==="image/gif"){
+    if(file.size > MAX_GIF_MB*1024*1024){
+      return Promise.reject(new Error(`GIF ini ${(file.size/1024/1024).toFixed(1)}MB, terlalu besar (maks ${MAX_GIF_MB}MB) dan berisiko bikin penyimpanan penuh. Coba pakai GIF yang lebih kecil/pendek.`));
+    }
+    return readFileAsDataURL(file); // keep as-is so the animation is preserved
+  }
+  return compressImage(file, 640, 0.72); // static images: compress as before
+}
 function compressImage(file, maxDim, quality){
   return new Promise((resolve, reject)=>{
     const reader=new FileReader();
@@ -699,7 +717,7 @@ function openCharForm(story,character){
   document.getElementById("cImgFile").onchange=(e)=>{
     const f=e.target.files[0]; if(!f) return;
     prev.style.display="block"; prev.style.opacity="0.4";
-    compressImage(f, 640, 0.72).then((dataUrl)=>{
+    handleImagePick(f).then((dataUrl)=>{
       curImg=dataUrl; prev.src=curImg; prev.style.opacity="1";
     }).catch((err)=>{ alert(err.message); prev.style.opacity="1"; });
   };
@@ -787,7 +805,7 @@ function openItemObjForm(story,item){
   document.getElementById("iImgFile").onchange=(e)=>{
     const f=e.target.files[0]; if(!f) return;
     prev.style.display="block"; prev.style.opacity="0.4";
-    compressImage(f, 640, 0.72).then((dataUrl)=>{
+    handleImagePick(f).then((dataUrl)=>{
       curImg=dataUrl; prev.src=curImg; prev.style.opacity="1";
     }).catch((err)=>{ alert(err.message); prev.style.opacity="1"; });
   };
