@@ -62,6 +62,11 @@
 
   .sidebar-foot{margin-top:auto;font-family:var(--ui);font-size:10.5px;color:var(--muted);line-height:1.6;padding-top:12px;border-top:1px solid var(--rule);}
 
+  /* Mobile topbar + drawer sidebar */
+  .mobile-topbar{display:none;}
+  .sidebar-backdrop{display:none;}
+  .sidebar-close{display:none;}
+
   /* Bottom nav — mobile only */
   .bottom-nav{
     display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;
@@ -80,12 +85,38 @@
   }
   .bottom-nav .tabs button .ico{font-size:18px;width:auto;}
   .bottom-nav .tabs button.active{color:#fff;}
+
   @media(max-width:900px){
     .bottom-nav{display:block;}
     .sidebar .tabs{display:none;}
     .sidebar .tab-group-label{display:none;}
     main{padding-bottom:92px;}
+
+    /* Sidebar becomes an off-canvas drawer instead of taking the full screen */
+    .mobile-topbar{
+      display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:45;
+      background:var(--paper-2);border-bottom:1px solid var(--rule);padding:12px 16px;
+    }
+    .hamburger{background:none;border:none;font-size:20px;line-height:1;color:var(--ink);cursor:pointer;padding:2px 4px;flex-shrink:0;}
+    #topbarStoryName{font-family:var(--display);font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+    .sidebar{
+      position:fixed;top:0;left:0;height:100%;height:100dvh;width:84%;max-width:320px;
+      transform:translateX(-105%);transition:transform .25s ease;z-index:60;
+      box-shadow:6px 0 24px rgba(0,0,0,.22);
+    }
+    .sidebar.open{transform:translateX(0);}
+    .sidebar-close{
+      display:block;position:absolute;top:14px;right:14px;background:none;border:none;
+      font-size:16px;color:var(--muted);cursor:pointer;padding:6px;
+    }
+    .sidebar-backdrop{
+      display:block;position:fixed;inset:0;background:rgba(20,14,10,.4);z-index:55;
+      opacity:0;pointer-events:none;transition:opacity .2s ease;
+    }
+    .sidebar-backdrop.show{opacity:1;pointer-events:auto;}
   }
+
 
   main{padding:36px 48px;max-width:980px;}
   @media(max-width:900px){main{padding:22px;}}
@@ -267,7 +298,13 @@
 <body>
 
 <div class="shell">
-  <aside class="sidebar">
+  <header class="mobile-topbar">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Buka menu">☰</button>
+    <span id="topbarStoryName">Pena</span>
+  </header>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <aside class="sidebar" id="sidebarEl">
+    <button class="sidebar-close" id="sidebarCloseBtn" aria-label="Tutup menu">✕</button>
     <div class="brand">Pena <small>studio novel</small></div>
 
     <div class="story-picker">
@@ -568,6 +605,8 @@ const main = document.getElementById("main");
 function render(){
   const story=getActiveStory();
   refreshStorySelect();
+  const topbarName=document.getElementById("topbarStoryName");
+  if(topbarName) topbarName.textContent = story ? story.title : "Pena";
   document.querySelectorAll(".tabs button").forEach(b=>{
     b.classList.toggle("active",b.dataset.tab===currentTab);
   });
@@ -1301,7 +1340,25 @@ function openDialogueForm(story,dialogue){
 /* ═══════════════════════════════════
    GLOBAL EVENTS
 ═══════════════════════════════════ */
-document.getElementById("storySelect").addEventListener("change",(e)=>{ db.activeId=e.target.value; saveDB(); render(); });
+document.getElementById("storySelect").addEventListener("change",(e)=>{ db.activeId=e.target.value; saveDB(); render(); closeSidebarDrawer(); });
+
+/* Mobile drawer open/close */
+function openSidebarDrawer(){
+  document.getElementById("sidebarEl").classList.add("open");
+  document.getElementById("sidebarBackdrop").classList.add("show");
+}
+function closeSidebarDrawer(){
+  document.getElementById("sidebarEl").classList.remove("open");
+  document.getElementById("sidebarBackdrop").classList.remove("show");
+}
+document.getElementById("hamburgerBtn").addEventListener("click", openSidebarDrawer);
+document.getElementById("sidebarCloseBtn").addEventListener("click", closeSidebarDrawer);
+document.getElementById("sidebarBackdrop").addEventListener("click", closeSidebarDrawer);
+document.getElementById("newStoryBtn").addEventListener("click", closeSidebarDrawer);
+// also close the drawer whenever a bottom-nav tab is tapped, in case the drawer was left open
+document.querySelector(".bottom-nav")?.addEventListener("click", closeSidebarDrawer);
+// safety net: if the drawer is somehow left open, any tap on the main content area closes it first
+main.addEventListener("click", ()=>{ if(document.getElementById("sidebarEl").classList.contains("open")) closeSidebarDrawer(); }, true);
 
 document.querySelectorAll(".tabs button").forEach(b=>{
   b.addEventListener("click",()=>{ currentTab=b.dataset.tab; render(); });
@@ -1378,9 +1435,9 @@ function renderDriveActions(){
       <button class="btn ghost small teal" id="driveSaveNowBtn">⇪ Simpan ke Drive</button>
       <button class="btn ghost small teal" id="driveLoadNowBtn">⇩ Muat dari Drive</button>
       <button class="btn ghost small" id="driveDisconnectBtn">Putuskan</button>`;
-    document.getElementById("driveSaveNowBtn").onclick=()=>driveSaveAll(true);
-    document.getElementById("driveLoadNowBtn").onclick=()=>driveLoadAll(true);
-    document.getElementById("driveDisconnectBtn").onclick=driveDisconnect;
+    document.getElementById("driveSaveNowBtn").onclick=()=>{ driveSaveAll(true); closeSidebarDrawer(); };
+    document.getElementById("driveLoadNowBtn").onclick=()=>{ driveLoadAll(true); closeSidebarDrawer(); };
+    document.getElementById("driveDisconnectBtn").onclick=()=>{ driveDisconnect(); closeSidebarDrawer(); };
     setDriveStatus("Google Drive: terhubung","on");
   } else if(getClientId()){
     area.innerHTML = `<button class="btn ghost small teal" id="driveConnectBtn">Hubungkan Drive</button>`;
@@ -1410,6 +1467,7 @@ function driveConnect(){
         if(resp.error){ setDriveStatus("Google Drive: gagal masuk","off"); alert("Gagal menghubungkan Drive: "+resp.error); return; }
         saveTokenCache(resp);
         renderDriveActions();
+        closeSidebarDrawer();
         driveFindOrCreateFile().then(()=>{ if(isAutoSyncOn()) driveSaveAll(false); });
       }
     });
