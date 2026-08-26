@@ -132,6 +132,16 @@
   .card .del:hover{color:var(--accent);}
 
   .thumb-wrap{display:flex;gap:12px;align-items:center;}
+
+  /* Character arc grouping + drag reorder */
+  .arc-group{margin-bottom:26px;}
+  .arc-group-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-family:var(--ui);}
+  .arc-group-head h3{font-family:var(--display);font-size:17px;margin:0;color:var(--ink);}
+  .arc-group-head .count{font-size:11px;color:var(--muted);background:var(--paper-2);border-radius:20px;padding:2px 9px;}
+  .drag-handle{position:absolute;top:8px;right:34px;cursor:grab;color:var(--muted);font-size:15px;line-height:1;padding:4px 6px;touch-action:none;user-select:none;border-radius:4px;}
+  .drag-handle:hover{color:var(--ink);background:rgba(0,0,0,.05);}
+  .card.dragging{opacity:.4;box-shadow:0 6px 16px rgba(0,0,0,.15);}
+  .card.drag-hint{outline:2px dashed var(--accent);outline-offset:2px;}
   .thumb{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);flex-shrink:0;background:var(--paper-2);}
   .thumb.item-thumb{border-radius:8px;border-color:var(--teal);}
   .thumb.placeholder{display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:18px;color:var(--gold);}
@@ -391,6 +401,10 @@ function migrateStory(s){
   if(!s.items) s.items = [];
   if(!s.worldSetting) s.worldSetting = defaultWorldSetting();
   if(!s.timeline) s.timeline = [];
+  if(s.characters) s.characters.forEach((c,i)=>{
+    if(c.arc===undefined) c.arc="";
+    if(c.order===undefined) c.order=i;
+  });
   return s;
 }
 function defaultWorldSetting(){
@@ -657,44 +671,117 @@ function renderOverview(story){
 function renderCharacters(story){
   main.innerHTML=`
     <div class="page-head"><h1>Karakter</h1>
-    <p>Nama karakter otomatis terdeteksi di seluruh teks — hover nama untuk melihat gambar &amp; profil.</p></div>
+    <p>Nama karakter otomatis terdeteksi di seluruh teks — hover nama untuk melihat gambar &amp; profil. Seret ikon ⠿ pada kartu untuk mengubah urutan dalam satu arc.</p></div>
     <div class="toolbar" style="justify-content:flex-start;margin-bottom:16px">
       <button class="btn" id="addCharBtn">+ Tambah karakter</button>
     </div>
     <div id="charForm"></div>
-    <div class="grid" id="charGrid"></div>
+    <div id="charGroups"></div>
   `;
-  const grid=document.getElementById("charGrid");
-  if(!story.characters.length) grid.innerHTML=`<p class="hint">Belum ada karakter. Klik "+ Tambah karakter" untuk mulai.</p>`;
-  story.characters.forEach(c=>{
-    const card=document.createElement("div");
-    card.className="card thumb-wrap";
-    card.innerHTML=`
-      <button class="del">✕</button>
-      ${c.image?`<img class="thumb" src="${escapeHtml(c.image)}" style="flex-shrink:0">`:
-        `<div class="thumb placeholder">${escapeHtml((c.name||"?")[0])}</div>`}
-      <div style="min-width:0">
-        <span class="badge char">Karakter</span>
-        <h3>${escapeHtml(c.name||"Tanpa nama")}</h3>
-        <p>${escapeHtml(c.role||"—")}</p>
-      </div>`;
-    card.onclick=(e)=>{ if(e.target.classList.contains("del")) return; openCharForm(story,c); };
-    card.querySelector(".del").onclick=(e)=>{ e.stopPropagation(); if(!confirm("Hapus karakter ini?")) return; story.characters=story.characters.filter(x=>x.id!==c.id); saveDB(); render(); };
-    grid.appendChild(card);
-  });
+  const groupsWrap=document.getElementById("charGroups");
+  if(!story.characters.length){
+    groupsWrap.innerHTML=`<p class="hint">Belum ada karakter. Klik "+ Tambah karakter" untuk mulai.</p>`;
+  } else {
+    // group by arc, preserving order of first appearance; characters with no arc go in "Tanpa Arc" last
+    const arcOrder=[];
+    story.characters.forEach(c=>{ const a=c.arc||""; if(a && !arcOrder.includes(a)) arcOrder.push(a); });
+    const groupKeys=[...arcOrder, ""];
+    groupKeys.forEach(arcKey=>{
+      const members=story.characters.filter(c=>(c.arc||"")===arcKey).sort((a,b)=>(a.order||0)-(b.order||0));
+      if(!members.length) return;
+      const section=document.createElement("div");
+      section.className="arc-group";
+      section.innerHTML=`
+        <div class="arc-group-head">
+          <h3>${escapeHtml(arcKey||"Tanpa Arc")}</h3>
+          <span class="count">${members.length}</span>
+        </div>
+        <div class="grid" data-arc="${escapeHtml(arcKey)}"></div>`;
+      const grid=section.querySelector(".grid");
+      members.forEach(c=>{
+        const card=document.createElement("div");
+        card.className="card thumb-wrap";
+        card.dataset.id=c.id;
+        card.innerHTML=`
+          <span class="drag-handle" title="Seret untuk ubah urutan">⠿</span>
+          <button class="del">✕</button>
+          ${c.image?`<img class="thumb" src="${escapeHtml(c.image)}" style="flex-shrink:0">`:
+            `<div class="thumb placeholder">${escapeHtml((c.name||"?")[0])}</div>`}
+          <div style="min-width:0">
+            <span class="badge char">Karakter</span>
+            <h3>${escapeHtml(c.name||"Tanpa nama")}</h3>
+            <p>${escapeHtml(c.role||"—")}</p>
+          </div>`;
+        card.onclick=(e)=>{ if(e.target.closest(".del")||e.target.closest(".drag-handle")) return; openCharForm(story,c); };
+        card.querySelector(".del").onclick=(e)=>{ e.stopPropagation(); if(!confirm("Hapus karakter ini?")) return; story.characters=story.characters.filter(x=>x.id!==c.id); saveDB(); render(); };
+        grid.appendChild(card);
+      });
+      groupsWrap.appendChild(section);
+      makeCardsSortable(grid, story, "characters");
+    });
+  }
   document.getElementById("addCharBtn").onclick=()=>openCharForm(story,null);
+}
+
+/* Generic pointer-based drag reorder within one .grid container.
+   Reorders the `order` field of items in `story[listKey]` that belong to
+   this specific group (identified by the cards currently inside `grid`). */
+function makeCardsSortable(grid, story, listKey){
+  let dragCard=null, dragging=false;
+  grid.querySelectorAll(".drag-handle").forEach(handle=>{
+    handle.addEventListener("pointerdown",(e)=>{
+      e.preventDefault();
+      dragCard=handle.closest(".card");
+      dragging=true;
+      dragCard.classList.add("dragging");
+      handle.setPointerCapture(e.pointerId);
+
+      const onMove=(ev)=>{
+        if(!dragging) return;
+        const el=document.elementFromPoint(ev.clientX, ev.clientY);
+        const overCard=el&&el.closest?el.closest(".card"):null;
+        if(overCard && overCard!==dragCard && overCard.parentElement===grid){
+          const rect=overCard.getBoundingClientRect();
+          const before = (ev.clientY - rect.top) < rect.height/2;
+          grid.insertBefore(dragCard, before?overCard:overCard.nextSibling);
+        }
+      };
+      const onUp=()=>{
+        dragging=false;
+        dragCard.classList.remove("dragging");
+        window.removeEventListener("pointermove",onMove);
+        window.removeEventListener("pointerup",onUp);
+        // persist new order for items currently in this grid
+        const ids=[...grid.querySelectorAll(".card")].map(el=>el.dataset.id);
+        ids.forEach((id,idx)=>{
+          const item=story[listKey].find(x=>x.id===id);
+          if(item) item.order=idx;
+        });
+        saveDB();
+      };
+      window.addEventListener("pointermove",onMove);
+      window.addEventListener("pointerup",onUp);
+    });
+  });
 }
 
 function openCharForm(story,character){
   const fw=document.getElementById("charForm");
   const isNew=!character;
-  const c=character||{id:uid(),name:"",role:"",desc:"",image:""};
+  const c=character||{id:uid(),name:"",role:"",desc:"",image:"",arc:"",order:story.characters.length};
+  const existingArcs=[...new Set(story.characters.map(x=>x.arc).filter(Boolean))];
   fw.innerHTML=`
     <div class="editor-card">
       <h2>${isNew?"Karakter baru":"Sunting karakter"}</h2>
       <div class="row">
         <div class="field"><label>Nama karakter</label><input type="text" id="cName" value="${escapeHtml(c.name)}" placeholder="Misal: Raina"></div>
         <div class="field"><label>Peran</label><input type="text" id="cRole" value="${escapeHtml(c.role)}" placeholder="Misal: Tokoh utama"></div>
+      </div>
+      <div class="field">
+        <label>Arc / Babak cerita</label>
+        <input type="text" id="cArc" value="${escapeHtml(c.arc||"")}" placeholder="Misal: Arc 1 - Perkenalan" list="arcSuggestions">
+        <datalist id="arcSuggestions">${existingArcs.map(a=>`<option value="${escapeHtml(a)}">`).join("")}</datalist>
+        <p class="hint">Karakter dengan arc yang sama akan dikelompokkan bersama. Kosongkan kalau belum termasuk arc tertentu.</p>
       </div>
       <div class="field"><label>Deskripsi (fisik, kepribadian, latar belakang)</label><textarea id="cDesc" style="min-height:80px">${escapeHtml(c.desc)}</textarea></div>
       <div class="field">
@@ -725,6 +812,7 @@ function openCharForm(story,character){
   document.getElementById("cSave").onclick=()=>{
     c.name=document.getElementById("cName").value.trim();
     c.role=document.getElementById("cRole").value.trim();
+    c.arc=document.getElementById("cArc").value.trim();
     c.desc=document.getElementById("cDesc").value.trim();
     c.image=curImg;
     if(!c.name){alert("Nama karakter wajib diisi.");return;}
